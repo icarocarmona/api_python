@@ -1,0 +1,19 @@
+POST http://localhost:80/pessoas 
+content-type: application/json
+
+{
+    "apelido": "josé",
+    "nome": "José Roberto",
+    "nascimento": "2000-10-01",
+    "stack": ["C#", "Node", "Oracle"]
+}
+
+###
+
+GET http://localhost:80/pessoas/1
+content-type: application/json
+
+###
+
+GET http://localhost:80/contagem-pessoas
+content-type: application/json
