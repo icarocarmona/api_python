@@ -1,8 +1,7 @@
-from datetime import datetime
-from flask import Flask, request, jsonify
-import uuid
 import json
+from flask import Flask, request, jsonify
 from database import DAO
+from pessoa import Pessoa
 
 app = Flask(__name__)
 
@@ -14,30 +13,6 @@ mock_pessoa = {
 }
 
 MSG_ERROR = "ERROR"
-
-
-class Pessoa(object):
-
-    def __init__(self, id, apelido, nome, nascimento, stack):
-        self.id = id
-        self.apelido = apelido
-        self.nome = nome
-        self.nascimento = nascimento
-        self.stack = stack
-
-    def dumps(self):
-        return json.dumps(self.__dict__, indent=4, sort_keys=True, default=str)
-
-    def parse(data):
-        apelido = data['apelido']
-        nome = data['nome']
-        nascimento = datetime.strptime(data["nascimento"], '%Y-%m-%d').date()
-        stack = data['stack']
-        return Pessoa(apelido, nome, nascimento, stack)
-
-    def converte_para_pessoa(row):
-        id, apelido, nome, nascimento, stack = row
-        return Pessoa(id, apelido, nome, nascimento, json.loads(stack))
 
 
 @app.route("/pessoas/<id>", methods=['GET'])
@@ -61,17 +36,29 @@ def count_pessoas():
 def set_pessa():
     try:
         data = request.get_json()
-        pessoa = Pessoa.parse(data)
+        pessoa = Pessoa.cria_pessoa(data)
         return pessoa.dumps(), 201
     except Exception as e:
+        print(e)
         return MSG_ERROR, 400
+
+# para fazer uma busca por pessoas
 
 
 @app.route("/pessoas", methods=['GET'])
 def busca_por_termo():
     args = request.args
-    data = jsonify(args.get("t", default="", type=str))
-    return data, 200
+    value = args.get("t", default="", type=str)
+    query = 'SELECT id, apelido, nome, nascimento, stack FROM pessoas WHERE stack_concat like %s'
+    dao = DAO()
+
+    rows = dao.select(query, [f"%{value}%"])
+    print(*rows)
+    pessoas = []
+    for row in rows:
+        pessoas.append(Pessoa.from_dict(row).to_dict())
+
+    return jsonify(pessoas), 200
 
 
 if __name__ == '__main__':
